@@ -1,0 +1,106 @@
+@import "tailwindcss";
+
+:root {
+  --fondo: #f4f4f1;
+  --sup: #ffffff;
+  --sup-2: #efeeea;
+  --borde: #e2e1dc;
+  --texto: #121211;
+  --texto-2: #56554f;
+  --texto-3: #6b6a63;
+  /* Contrastes >= 4,5:1 medidos contra sup, fondo y sup-2: se usa con luz fuerte y brillo bajo. */
+  --acento: #2268c2;
+  --acento-boton: #2268c2;
+  --acento-fuerte: #1c5cab;
+  --acento-suave: #e6f0fc;
+  --sobre-acento: #ffffff;
+  --ok: #0b7d0b;
+  --ok-fondo: #0b7d0b;
+  --ok-suave: #e3f3e3;
+  --peligro: #c43333;
+  --peligro-suave: #fbeaea;
+  --peligro-aviso: #b42a2a;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #121211;
+    --sup: #1c1c1b;
+    --sup-2: #272725;
+    --borde: #34342f;
+    --texto: #f4f4f1;
+    --texto-2: #c3c2b7;
+    --texto-3: #8f8e86;
+    /* En oscuro el azul de texto es más claro que el de los botones: el blanco encima necesita un fondo más oscuro. */
+    --acento: #4a93ea;
+    --acento-boton: #2a72cc;
+    --acento-fuerte: #2568c0;
+    --acento-suave: #182a40;
+    --sobre-acento: #ffffff;
+    --ok: #45c145;
+    --ok-fondo: #1a8a1a;
+    --ok-suave: #15301a;
+    --peligro: #ec7272;
+    --peligro-suave: #3b1c1c;
+    --peligro-aviso: #b42a2a;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-sup: var(--sup);
+  --color-sup-2: var(--sup-2);
+  --color-borde: var(--borde);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-texto-3: var(--texto-3);
+  --color-acento: var(--acento);
+  --color-acento-boton: var(--acento-boton);
+  --color-acento-fuerte: var(--acento-fuerte);
+  --color-acento-suave: var(--acento-suave);
+  --color-sobre-acento: var(--sobre-acento);
+  --color-ok: var(--ok);
+  --color-ok-fondo: var(--ok-fondo);
+  --color-ok-suave: var(--ok-suave);
+  --color-peligro: var(--peligro);
+  --color-peligro-suave: var(--peligro-suave);
+  --color-peligro-aviso: var(--peligro-aviso);
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* En capa base para que las utilidades de Tailwind las puedan pisar. */
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--texto);
+    font-family: var(--font-sans);
+    overscroll-behavior-y: none;
+  }
+
+  /* iOS agranda la página al enfocar un input con letra < 16px. */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  dialog::backdrop {
+    background: rgb(0 0 0 / 0.45);
+  }
+
+  .pb-seguro {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+
+  .pt-seguro {
+    padding-top: env(safe-area-inset-top);
+  }
+}

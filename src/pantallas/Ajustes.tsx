@@ -1,11 +1,12 @@
 import { useRef, useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Download, Share2, Smartphone, Upload } from 'lucide-react'
+import { Download, RefreshCw, Share2, Smartphone, Upload } from 'lucide-react'
 import { db, leerMeta } from '../lib/db'
 import { META_ULTIMA_COPIA, archivoDeCopia, armarCopia, leerCopia, marcarCopiaHecha, restaurarCopia, type Copia } from '../lib/copia'
 import { pedirPersistencia } from '../lib/datos'
 import { avisar, avisarError } from '../lib/aviso'
 import { esIOS, estaInstalada, instalar, usePuedeInstalar } from '../lib/instalar'
+import { buscarActualizacion } from '../lib/actualizacion'
 import { fechaISO, fechaLarga, haceCuanto } from '../lib/util'
 import { Boton, Confirmar, Encabezado, Pagina } from '../componentes/ui'
 
@@ -28,6 +29,7 @@ export default function Ajustes() {
   const archivo = useRef<HTMLInputElement>(null)
   const [aRestaurar, setARestaurar] = useState<Copia | null>(null)
   const [trabajando, setTrabajando] = useState(false)
+  const [buscando, setBuscando] = useState(false)
   // persisted() no es un cambio en la base: la consulta viva no se entera sola.
   const [persistenteAhora, setPersistenteAhora] = useState(false)
   const persistente = persistenteAhora || !!estado?.persistente
@@ -176,6 +178,31 @@ export default function Ajustes() {
               Pedir que no se borren
             </Boton>
           )}
+        </Seccion>
+
+        <Seccion titulo="Versión">
+          <p className="text-sm text-texto-2">
+            Instalada: <span className="font-semibold tabular-nums text-texto">{__VERSION__}</span>
+          </p>
+          <p className="mt-1 text-xs text-texto-3">Se actualiza sola al abrirla con internet. Si sabés que hay una nueva y no aparece, buscala acá.</p>
+          <Boton
+            variante="secundario"
+            className="mt-4 w-full"
+            cargando={buscando}
+            onClick={async () => {
+              setBuscando(true)
+              try {
+                // Si hay una nueva, la página se recarga sola al terminar de bajarla.
+                if (!(await buscarActualizacion())) avisar('Ya tenés la última versión')
+              } catch {
+                avisar('No se pudo buscar: revisá la conexión a internet', 'error')
+              } finally {
+                setBuscando(false)
+              }
+            }}
+          >
+            <RefreshCw className="h-5 w-5" /> Buscar actualización
+          </Boton>
         </Seccion>
       </Pagina>
 

@@ -3,8 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronRight, Plus, Search, Settings, ShieldAlert, Smartphone, X } from 'lucide-react'
 import { crearAlumno } from '../lib/datos'
-import { useAlumnos, useUltimosRegistros } from '../lib/consultas'
-import { useSala } from '../lib/sala'
+import { diaQueLeToca, useAlumnos, useUltimosRegistros } from '../lib/consultas'
+import { useHoy } from '../lib/hooks'
+import { rutaSesion, useSala } from '../lib/sala'
 import { db, leerMeta } from '../lib/db'
 import { META_ULTIMA_COPIA } from '../lib/copia'
 import { avisarError } from '../lib/aviso'
@@ -19,6 +20,7 @@ export default function Inicio() {
   const alumnos = useAlumnos()
   const ultimos = useUltimosRegistros()
   const sala = useSala()
+  const hoyISO = useHoy()
   const [busqueda, setBusqueda] = useState('')
   const [nuevoAbierto, setNuevoAbierto] = useState(false)
 
@@ -87,21 +89,24 @@ export default function Inicio() {
                   const activa = a.rutinas.find((r) => r.activa)
                   const ultimo = ultimos?.get(a.id)
                   const enSala = sala?.find((e) => e.alumnoId === a.id)
-                  const diaEnSala = a.rutinas.find((r) => r.id === enSala?.rutinaId)?.dias.find((d) => d.id === enSala?.diaId)
+                  const toca = activa && ultimos ? diaQueLeToca(activa, ultimo, hoyISO, enSala) : undefined
+                  const entrenando = !!toca && toca.id === enSala?.diaId
+                  // Directo al día que está haciendo (o al que le toca); sin rutina, a la ficha para armarla.
+                  const destino = activa && toca ? rutaSesion(a.id, activa.id, toca.id) : `/alumno/${a.id}`
                   return (
                     <li key={a.id}>
-                      <Link to={`/alumno/${a.id}`} className="flex items-center gap-3 px-4 py-3 active:bg-sup-2">
+                      <Link to={destino} state={{ sala: true }} className="flex items-center gap-3 px-4 py-3 active:bg-sup-2">
                         <Inicial nombre={a.nombre} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-base font-semibold">{a.nombre}</p>
-                          {diaEnSala ? (
+                          {entrenando ? (
                             <p className="flex items-center gap-1.5 truncate text-sm font-medium text-acento">
                               <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-acento" />
-                              Entrenando · {diaEnSala.nombre}
+                              Entrenando · {toca.nombre}
                             </p>
                           ) : (
                             <p className="truncate text-sm text-texto-3">
-                              {activa ? activa.nombre : 'Sin rutina'}
+                              {!activa ? 'Sin rutina: tocá para armarla' : toca ? `Le toca ${toca.nombre}` : activa.nombre}
                               {ultimo && ` · vino ${haceCuanto(ultimo.fecha)}`}
                             </p>
                           )}

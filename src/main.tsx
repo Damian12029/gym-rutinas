@@ -4,14 +4,11 @@ import { registerSW } from 'virtual:pwa-register'
 import './index.css'
 import App from './App.tsx'
 import { escucharInstalacion } from './lib/instalar'
-import { marcarVersionNueva, recargarSiSeguro } from './lib/actualizacion'
+import { marcarVersionNueva, vigilarActualizaciones } from './lib/actualizacion'
 
 escucharInstalacion()
 // Guarda la app en el teléfono para que abra sin internet y se actualice sola.
-registerSW({ immediate: true, onNeedReload: marcarVersionNueva })
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') recargarSiSeguro()
-})
+registerSW({ immediate: true, onNeedReload: marcarVersionNueva, onRegisteredSW: (_url, r) => vigilarActualizaciones(r) })
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

@@ -59,17 +59,27 @@ function useSalaCompleta(): EnSalaCompleto[] | undefined {
  * Pasar de uno a otro reemplaza la pantalla (atrás no recorre a todos) y vuelve a la
  * altura donde estaba cada uno.
  */
-export function BarraSala({ alumnoActualId }: { alumnoActualId: string }) {
+export function BarraSala({
+  actual,
+}: {
+  /** El alumno en pantalla: se muestra aunque todavía no esté en sala (entra al anotar). */
+  actual: { alumno: Alumno; rutina: Rutina; dia: Dia; completos: number; esHoy: boolean }
+}) {
   const navigate = useNavigate()
-  const lista = useSalaCompleta()
+  const enSala = useSalaCompleta()
   const [sumando, setSumando] = useState(false)
   const activo = useRef<HTMLButtonElement>(null)
+  const alumnoActualId = actual.alumno.id
 
   useEffect(() => {
     activo.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [alumnoActualId, lista?.length])
+  }, [alumnoActualId, enSala?.length])
 
-  if (!lista) return <div className="h-12" />
+  if (!enSala) return <div className="h-12" />
+  // El de la pantalla muestra el día que se está viendo; si no está en sala, va al final.
+  const lista = enSala.some((x) => x.alumno.id === alumnoActualId)
+    ? enSala.map((x) => (x.alumno.id === alumnoActualId ? { ...x, ...actual } : x))
+    : [...enSala, actual]
   const cortos = nombresCortos(lista.map((x) => x.alumno))
 
   return (
@@ -110,7 +120,15 @@ export function BarraSala({ alumnoActualId }: { alumnoActualId: string }) {
       </nav>
 
       <Hoja abierta={sumando} onCerrar={() => setSumando(false)} titulo="¿Quién llegó?" cerrarAlTocarFuera>
-        {sumando && <SelectorAlumno excluir={new Set(lista.map((x) => x.alumno.id))} onElegido={() => setSumando(false)} reemplazar />}
+        {sumando && (
+          <SelectorAlumno
+            excluir={new Set(lista.map((x) => x.alumno.id))}
+            onElegido={() => setSumando(false)}
+            // Sumar a otro implica que este también está entrenando: queda en la barra.
+            antes={actual.esHoy ? () => entrarEnSala(alumnoActualId, actual.rutina.id, actual.dia.id) : undefined}
+            reemplazar
+          />
+        )}
       </Hoja>
     </>
   )
@@ -120,7 +138,17 @@ export function BarraSala({ alumnoActualId }: { alumnoActualId: string }) {
  * Lista para sumar a alguien a la sala: un toque va directo al día que le toca.
  * "Otro día" deja elegir si hoy hace uno distinto.
  */
-function SelectorAlumno({ excluir, onElegido, reemplazar }: { excluir: Set<string>; onElegido: () => void; reemplazar: boolean }) {
+function SelectorAlumno({
+  excluir,
+  onElegido,
+  antes,
+  reemplazar,
+}: {
+  excluir: Set<string>
+  onElegido: () => void
+  antes?: () => Promise<void>
+  reemplazar: boolean
+}) {
   const navigate = useNavigate()
   const alumnos = useAlumnos()
   const ultimos = useUltimosRegistros()
@@ -134,6 +162,7 @@ function SelectorAlumno({ excluir, onElegido, reemplazar }: { excluir: Set<strin
 
   async function ir(alumno: Alumno, rutina: Rutina, dia: Dia) {
     try {
+      await antes?.()
       await entrarEnSala(alumno.id, rutina.id, dia.id)
       onElegido()
       navigate(rutaSesion(alumno.id, rutina.id, dia.id), { replace: reemplazar, state: { sala: true } })

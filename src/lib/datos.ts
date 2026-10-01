@@ -1,7 +1,7 @@
 import { db } from './db'
 import type { Alumno, Dia, DiaParseado, Ejercicio, Registro, Rutina } from './tipos'
 import { claveEjercicio, hoy, uid } from './util'
-import { marcarActividad } from './sala'
+import { entrarEnSala } from './sala'
 
 // Pide al navegador que no borre los datos si el teléfono se queda sin espacio.
 let persistenciaPedida = false
@@ -212,7 +212,15 @@ export async function borrarEjercicio(alumnoId: string, rutinaId: string, diaId:
 // ---------- Lo anotado ----------
 
 /** Un registro por ejercicio y fecha. Si queda sin pesos ni nota, se borra. */
-export async function guardarRegistro(p: { alumnoId: string; ejercicio: Ejercicio; fecha: string; pesos: (number | null)[]; nota: string }): Promise<void> {
+export async function guardarRegistro(p: {
+  alumnoId: string
+  ejercicio: Ejercicio
+  fecha: string
+  pesos: (number | null)[]
+  nota: string
+  /** Si se anota hoy: el alumno entra (o sigue) en sala con ese día. */
+  sala?: { rutinaId: string; diaId: string }
+}): Promise<void> {
   const pesos = [...p.pesos]
   // Las series extra vacías al final no suman nada.
   while (pesos.length > p.ejercicio.series && pesos[pesos.length - 1] == null) pesos.pop()
@@ -238,5 +246,5 @@ export async function guardarRegistro(p: { alumnoId: string; ejercicio: Ejercici
     await db.registros.put(registro)
   })
   void pedirPersistencia()
-  void marcarActividad(p.alumnoId)
+  if (p.sala && !vacio) await entrarEnSala(p.alumnoId, p.sala.rutinaId, p.sala.diaId)
 }

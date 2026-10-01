@@ -37,11 +37,6 @@ export async function salirDeSala(alumnoId: string): Promise<void> {
   await db.sala.delete(alumnoId)
 }
 
-/** Anotar un peso cuenta como actividad: mientras se anota, no vence. */
-export async function marcarActividad(alumnoId: string): Promise<void> {
-  await db.sala.update(alumnoId, { actualizado: Date.now() })
-}
-
 export async function limpiarSala(): Promise<void> {
   const ahora = Date.now()
   const vencidos = (await db.sala.toArray()).filter((e) => vencido(e, ahora)).map((e) => e.alumnoId)

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { CalendarDays, Check, LogOut, MessageSquareText, Pencil, Plus, Trophy, TrendingUp } from 'lucide-react'
+import { CalendarDays, Check, LogOut, MessageSquareText, Pencil, Plus, Trophy, TrendingUp, UserRound } from 'lucide-react'
 import {
   agruparPorEjercicio,
   anteriorA,
@@ -57,14 +57,16 @@ export default function SesionPage() {
     volver(`/alumno/${alumno.id}`)
   }, [faltaDia, alumno, volver])
 
-  // Abrir el día de hoy de un alumno lo pone "en sala": queda en la barra para volver a él.
+  // Entra a la sala al anotar el primer peso (mirar no cuenta). Si ya estaba y se pasa a
+  // otro día, la sala se queda con el día nuevo.
   const esHoy = fecha === hoyISO
   const idAlumno = alumno?.id
   const idRutina = rutina?.id
   const idDia = dia?.id
+  const yaEnSala = !!idAlumno && (sala?.some((e) => e.alumnoId === idAlumno) ?? false)
   useEffect(() => {
-    if (idAlumno && idRutina && idDia && esHoy) entrarEnSala(idAlumno, idRutina, idDia).catch(avisarError)
-  }, [idAlumno, idRutina, idDia, esHoy])
+    if (idAlumno && idRutina && idDia && esHoy && yaEnSala) entrarEnSala(idAlumno, idRutina, idDia).catch(avisarError)
+  }, [idAlumno, idRutina, idDia, esHoy, yaEnSala])
 
   if (alumno === undefined || registros === undefined || faltaDia) return <Cargando />
   if (!alumno || !rutina || !dia) return <NoEncontrado texto="Ese alumno no existe o se borró." />
@@ -93,6 +95,12 @@ export default function SesionPage() {
     }
   }
 
+  function irAlDia(id: string) {
+    if (!alumno || !rutina) return
+    const busqueda = params.toString()
+    navigate(`${rutaSesion(alumno.id, rutina.id, id)}${busqueda ? `?${busqueda}` : ''}`, { replace: true })
+  }
+
   function cambiarFecha(nueva: string) {
     if (!esFechaISO(nueva)) return
     setParams(nueva === hoyISO ? {} : { fecha: nueva }, { replace: true })
@@ -104,18 +112,50 @@ export default function SesionPage() {
         titulo={alumno.nombre}
         subtitulo={rutina.activa ? dia.nombre : `${dia.nombre} · ${rutina.nombre} (anterior)`}
         onVolver={atras}
-        debajo={<BarraSala alumnoActualId={alumno.id} />}
+        debajo={<BarraSala actual={{ alumno, rutina, dia, completos, esHoy }} />}
         acciones={
-          <Link
-            to={`/alumno/${alumno.id}/rutina/${rutina.id}`}
-            aria-label="Editar rutina"
-            className="flex h-11 w-11 items-center justify-center rounded-full text-texto-2 active:bg-sup-2"
-          >
-            <Pencil className="h-5 w-5" />
-          </Link>
+          <>
+            <Link
+              to={`/alumno/${alumno.id}/rutina/${rutina.id}`}
+              aria-label="Editar rutina"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-texto-2 active:bg-sup-2"
+            >
+              <Pencil className="h-5 w-5" />
+            </Link>
+            <Link
+              to={`/alumno/${alumno.id}`}
+              aria-label="Ficha del alumno: progreso, rutinas y datos"
+              className="flex h-11 w-11 items-center justify-center rounded-full text-texto-2 active:bg-sup-2"
+            >
+              <UserRound className="h-5 w-5" />
+            </Link>
+          </>
         }
       />
       <Pagina>
+        {rutina.dias.length > 1 && (
+          <div
+            role="tablist"
+            aria-label="Días de la rutina"
+            className="-mx-4 mb-3 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {rutina.dias.map((d) => (
+              <button
+                key={d.id}
+                type="button"
+                role="tab"
+                aria-selected={d.id === dia.id}
+                onClick={() => d.id !== dia.id && irAlDia(d.id)}
+                className={cx(
+                  'h-10 max-w-[12rem] shrink-0 truncate rounded-full px-4 text-sm font-semibold',
+                  d.id === dia.id ? 'bg-texto text-fondo' : 'bg-sup-2 text-texto-2 active:brightness-95',
+                )}
+              >
+                {d.nombre}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="mb-4 flex items-center gap-2">
           <label className="relative flex h-11 items-center gap-2 rounded-xl bg-sup-2 px-3 font-semibold">
             <CalendarDays className="h-5 w-5 text-acento" />
@@ -167,6 +207,7 @@ export default function SesionPage() {
               <TarjetaEjercicio
                 key={`${e.id}|${fecha}`}
                 alumnoId={alumno.id}
+                sala={esHoy ? { rutinaId: rutina.id, diaId: dia.id } : undefined}
                 ejercicio={e}
                 numero={i + 1}
                 fecha={fecha}
@@ -204,6 +245,7 @@ function focoSiguiente(e: KeyboardEvent<HTMLInputElement>) {
 
 function TarjetaEjercicio({
   alumnoId,
+  sala,
   ejercicio,
   numero,
   fecha,
@@ -211,6 +253,8 @@ function TarjetaEjercicio({
   historial,
 }: {
   alumnoId: string
+  /** Solo hoy: anotar pone al alumno en sala con este día. */
+  sala: { rutinaId: string; diaId: string } | undefined
   ejercicio: Ejercicio
   numero: number
   fecha: string
@@ -241,7 +285,7 @@ function TarjetaEjercicio({
     const nuevosPesos = nuevosTextos.map((t) => leerPeso(t) ?? null)
     // Encadenado: si se tipea rápido, las escrituras llegan en orden.
     ultimoGuardado.current = ultimoGuardado.current
-      .then(() => guardarRegistro({ alumnoId, ejercicio, fecha, pesos: nuevosPesos, nota: nuevaNota }))
+      .then(() => guardarRegistro({ alumnoId, ejercicio, fecha, pesos: nuevosPesos, nota: nuevaNota, sala }))
       .then(
         () => setErrorGuardado(false),
         (e: unknown) => {

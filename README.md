@@ -5,7 +5,7 @@ App web instalable (PWA) para que un entrenador lleve las rutinas de sus alumnos
 - **Alumnos**, cada uno con sus **rutinas** (una activa, las anteriores quedan guardadas), cada rutina con **días** y cada día con **ejercicios** (series, repeticiones, descanso, indicaciones).
 - **Pegar rutina**: se pega el texto tal como se manda por WhatsApp ("Día 1", un ejercicio por renglón) y la app arma días y ejercicios. También se puede copiar una rutina de otro alumno o cargarla a mano.
 - **Anotar**: en cada día, un casillero de kilos por serie. Muestra lo de la vez anterior y el récord, avisa cuando hay récord nuevo y se guarda solo.
-- **Varios alumnos a la vez**: cada alumno que se abre queda "en sala". Arriba de la pantalla de anotar hay un botón por alumno (con cuántos ejercicios lleva completos) para pasar de uno a otro con un toque, y cada uno vuelve a la altura donde estaba. "+ Alumno" suma a otro y va directo al día que le toca. En Inicio aparecen en "Entrenando ahora". Salen con "terminó por hoy" o solos después de 3 horas sin anotar.
+- **Varios alumnos a la vez**: cada alumno que se abre queda "en sala". Arriba de la pantalla de anotar hay un botón por alumno (con cuántos ejercicios lleva completos) para pasar de uno a otro con un toque, y cada uno vuelve a la altura donde estaba. "+ Alumno" suma a otro y va directo al día que le toca. En la lista de alumnos figuran como "Entrenando". Salen con "terminó por hoy" o solos después de 3 horas sin anotar.
 - **Progreso**: por ejercicio, el peso máximo de cada sesión en un gráfico y la lista de sesiones. Sigue sumando entre rutinas si el ejercicio se llama igual.
 - **Sin internet**: una vez abierta, funciona offline (service worker).
 

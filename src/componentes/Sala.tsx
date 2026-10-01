@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronDown, Search, UserPlus, X } from 'lucide-react'
+import { ChevronDown, Search, UserPlus } from 'lucide-react'
 import { db, type EnSala } from '../lib/db'
 import { contarCompletos, diaQueLeToca, useAlumnos, useUltimosRegistros } from '../lib/consultas'
 import { useHoy } from '../lib/hooks'
-import { entrarEnSala, rutaSesion, salirDeSala, useSala } from '../lib/sala'
+import { entrarEnSala, rutaSesion, useSala } from '../lib/sala'
 import type { Alumno, Dia, Registro, Rutina } from '../lib/tipos'
 import { avisarError } from '../lib/aviso'
 import { claveEjercicio, iniciales, nombresCortos } from '../lib/util'
@@ -232,58 +232,5 @@ function Avatar({ nombre }: { nombre: string }) {
     <span aria-hidden className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-acento-suave text-sm font-bold text-acento">
       {iniciales(nombre)}
     </span>
-  )
-}
-
-/** En Inicio: volver con un toque a cada alumno que está entrenando. */
-export function EntrenandoAhora() {
-  const navigate = useNavigate()
-  const lista = useSalaCompleta()
-  const [sumando, setSumando] = useState(false)
-  if (!lista || lista.length === 0) return null
-
-  return (
-    <section className="mb-5">
-      <div className="mb-2 flex items-end justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-texto-3">Entrenando ahora</h2>
-        <button
-          type="button"
-          onClick={() => setSumando(true)}
-          className="flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm font-semibold text-acento active:bg-acento-suave"
-        >
-          <UserPlus className="h-4 w-4" /> Sumar
-        </button>
-      </div>
-      <ul className="space-y-2">
-        {lista.map(({ alumno, rutina, dia, completos }) => (
-          <li key={alumno.id} className="flex items-center gap-1 rounded-2xl border border-acento/30 bg-acento-suave/60">
-            <button
-              type="button"
-              onClick={() => navigate(rutaSesion(alumno.id, rutina.id, dia.id), { state: { sala: true } })}
-              className="flex min-w-0 flex-1 items-center gap-3 rounded-2xl py-2.5 pl-3 text-left active:brightness-95"
-            >
-              <Avatar nombre={alumno.nombre} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">{alumno.nombre}</span>
-                <span className="block truncate text-sm text-texto-2">
-                  {dia.nombre} · {completos}/{dia.ejercicios.length} completos
-                </span>
-              </span>
-            </button>
-            <button
-              type="button"
-              aria-label={`${alumno.nombre} terminó`}
-              onClick={() => void salirDeSala(alumno.id).catch(avisarError)}
-              className="mr-1 flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-texto-3 active:bg-sup-2"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </li>
-        ))}
-      </ul>
-      <Hoja abierta={sumando} onCerrar={() => setSumando(false)} titulo="¿Quién llegó?" cerrarAlTocarFuera>
-        {sumando && <SelectorAlumno excluir={new Set(lista.map((x) => x.alumno.id))} onElegido={() => setSumando(false)} reemplazar={false} />}
-      </Hoja>
-    </section>
   )
 }

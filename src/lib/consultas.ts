@@ -41,12 +41,20 @@ export function ultimoRegistro(registros: Registro[]): UltimoRegistro | undefine
 }
 
 /**
- * El día de la rutina que le toca: si hoy ya anotó algo, el que está haciendo; si no,
- * el siguiente al último que hizo (vuelve al primero después del último).
+ * El día de la rutina que le toca. Si está en sala, el que abrió (aunque todavía no haya
+ * anotado nada); si hoy ya anotó algo, ese; si no, el siguiente al último que hizo
+ * (vuelve al primero después del último).
  */
-export function diaQueLeToca(rutina: Rutina, ultimo: UltimoRegistro | undefined, hoyISO: string): Dia | undefined {
+export function diaQueLeToca(
+  rutina: Rutina,
+  ultimo: UltimoRegistro | undefined,
+  hoyISO: string,
+  enSala?: { rutinaId: string; diaId: string },
+): Dia | undefined {
   const dias = rutina.dias.filter((d) => d.ejercicios.length > 0)
   if (dias.length === 0) return undefined
+  const abierto = enSala?.rutinaId === rutina.id ? dias.find((d) => d.id === enSala.diaId) : undefined
+  if (abierto) return abierto
   const i = ultimo ? dias.findIndex((d) => d.ejercicios.some((e) => e.id === ultimo.ejercicioId)) : -1
   if (i < 0) return dias[0]
   return ultimo && ultimo.fecha === hoyISO ? dias[i] : dias[(i + 1) % dias.length]

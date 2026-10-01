@@ -5,7 +5,7 @@ import { ChevronRight, Plus, Search, Settings, ShieldAlert, Smartphone, X } from
 import { crearAlumno } from '../lib/datos'
 import { diaQueLeToca, useAlumnos, useUltimosRegistros } from '../lib/consultas'
 import { useHoy } from '../lib/hooks'
-import { rutaSesion } from '../lib/sala'
+import { rutaSesion, useSala } from '../lib/sala'
 import { EntrenandoAhora } from '../componentes/Sala'
 import { db, leerMeta } from '../lib/db'
 import { META_ULTIMA_COPIA } from '../lib/copia'
@@ -20,6 +20,7 @@ const DIAS_ENTRE_COPIAS = 7
 export default function Inicio() {
   const alumnos = useAlumnos()
   const ultimos = useUltimosRegistros()
+  const sala = useSala()
   const hoyISO = useHoy()
   const [busqueda, setBusqueda] = useState('')
   const [nuevoAbierto, setNuevoAbierto] = useState(false)
@@ -89,7 +90,9 @@ export default function Inicio() {
                 {filtrados.map((a) => {
                   const activa = a.rutinas.find((r) => r.activa)
                   const ultimo = ultimos?.get(a.id)
-                  const toca = activa && ultimos ? diaQueLeToca(activa, ultimo, hoyISO) : undefined
+                  const enSala = sala?.find((e) => e.alumnoId === a.id)
+                  const toca = activa && ultimos ? diaQueLeToca(activa, ultimo, hoyISO, enSala) : undefined
+                  const entrenando = !!enSala && toca?.id === enSala.diaId
                   return (
                     <li key={a.id} className="flex items-center">
                       <Link to={`/alumno/${a.id}`} className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-2 active:bg-sup-2">
@@ -97,21 +100,27 @@ export default function Inicio() {
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-base font-semibold">{a.nombre}</p>
                           <p className="truncate text-sm text-texto-3">
-                            {activa ? activa.nombre : 'Sin rutina'}
-                            {ultimo && ` · vino ${haceCuanto(ultimo.fecha)}`}
+                            {!activa ? (
+                              'Sin rutina'
+                            ) : toca ? (
+                              <span className="font-medium text-acento">{entrenando ? `Entrenando ${toca.nombre}` : `Le toca ${toca.nombre}`}</span>
+                            ) : (
+                              activa.nombre
+                            )}
+                            {ultimo && !entrenando && ` · vino ${haceCuanto(ultimo.fecha)}`}
                           </p>
                         </div>
                         {!(activa && toca) && <ChevronRight className="h-5 w-5 shrink-0 text-texto-3" />}
                       </Link>
-                      {/* Atajo al día que le toca: el alumno llega y se empieza a anotar con un toque. */}
+                      {/* Atajo al día que le toca (el de la línea de arriba): el alumno llega y se anota con un toque. */}
                       {activa && toca && (
                         <Link
                           to={rutaSesion(a.id, activa.id, toca.id)}
                           state={{ sala: true }}
-                          aria-label={`Anotar ${toca.nombre} de ${a.nombre}`}
-                          className="mr-3 flex h-10 max-w-[8rem] shrink-0 items-center rounded-full bg-acento-suave px-3.5 text-sm font-semibold text-acento active:brightness-95"
+                          aria-label={`${entrenando ? 'Seguir' : 'Anotar'} ${toca.nombre} de ${a.nombre}`}
+                          className="mr-3 flex h-10 shrink-0 items-center rounded-full bg-acento-suave px-4 text-sm font-semibold text-acento active:brightness-95"
                         >
-                          <span className="truncate">{toca.nombre}</span>
+                          {entrenando ? 'Seguir' : 'Anotar'}
                         </Link>
                       )}
                     </li>

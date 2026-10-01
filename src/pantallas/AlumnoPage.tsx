@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { ChevronRight, ClipboardList, Pencil, Plus, TrendingUp } from 'lucide-react'
 import { diaQueLeToca, ultimoRegistro, useAlumno, useRegistrosAlumno } from '../lib/consultas'
 import { useHoy } from '../lib/hooks'
+import { useSala } from '../lib/sala'
 import { borrarAlumno, modificarAlumno } from '../lib/datos'
 import { avisar, avisarError } from '../lib/aviso'
 import type { Alumno } from '../lib/tipos'
@@ -15,6 +16,7 @@ export default function AlumnoPage() {
   const registros = useRegistrosAlumno(alumnoId)
   const [editando, setEditando] = useState(false)
   const hoyISO = useHoy()
+  const sala = useSala()
 
   // Última fecha anotada de cada ejercicio, para mostrar cuándo se hizo cada día.
   const ultimaPorEjercicio = useMemo(() => {
@@ -30,7 +32,8 @@ export default function AlumnoPage() {
   if (alumno === null) return <NoEncontrado texto="Ese alumno no existe o se borró." />
 
   const activa = alumno.rutinas.find((r) => r.activa)
-  const toca = activa && registros ? diaQueLeToca(activa, ultimoRegistro(registros), hoyISO) : undefined
+  const enSala = sala?.find((e) => e.alumnoId === alumno.id)
+  const toca = activa && registros ? diaQueLeToca(activa, ultimoRegistro(registros), hoyISO, enSala) : undefined
   const anteriores = alumno.rutinas.filter((r) => !r.activa)
 
   return (
@@ -82,7 +85,11 @@ export default function AlumnoPage() {
                         )}
                       >
                         <div className="min-w-0 flex-1">
-                          {leToca && <p className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-acento">Le toca hoy</p>}
+                          {leToca && (
+                            <p className="mb-0.5 text-xs font-semibold uppercase tracking-wide text-acento">
+                              {enSala?.diaId === d.id ? 'Entrenando ahora' : 'Le toca hoy'}
+                            </p>
+                          )}
                           <p className="truncate text-lg font-semibold">{d.nombre}</p>
                           <p className="truncate text-sm text-texto-3">
                             {d.ejercicios.length} {d.ejercicios.length === 1 ? 'ejercicio' : 'ejercicios'}

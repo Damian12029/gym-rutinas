@@ -30,6 +30,16 @@ describe('diaQueLeToca', () => {
     expect(diaQueLeToca(rutina, ultimo, hoy)?.id).toBe(esperado)
   })
 
+  it('en sala manda el día que abrió, aunque no haya anotado nada', () => {
+    expect(diaQueLeToca(rutina, undefined, hoy, { rutinaId: 'r', diaId: 'd2' })?.id).toBe('d2')
+    expect(diaQueLeToca(rutina, { fecha: '2026-09-28', ejercicioId: 'b', actualizado: 1 }, hoy, { rutinaId: 'r', diaId: 'd4' })?.id).toBe('d4')
+  })
+
+  it('en sala con otra rutina o un día vacío: no cuenta', () => {
+    expect(diaQueLeToca(rutina, undefined, hoy, { rutinaId: 'otra', diaId: 'd2' })?.id).toBe('d1')
+    expect(diaQueLeToca(rutina, undefined, hoy, { rutinaId: 'r', diaId: 'vacio' })?.id).toBe('d1')
+  })
+
   it('rutina sin ejercicios: ninguno', () => {
     expect(diaQueLeToca({ ...rutina, dias: [{ id: 'x', nombre: 'Día 1', ejercicios: [] }] }, undefined, hoy)).toBeUndefined()
   })
